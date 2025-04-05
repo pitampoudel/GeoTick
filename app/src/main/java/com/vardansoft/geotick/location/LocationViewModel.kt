@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.location.Location
 import android.os.Looper
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -101,13 +102,10 @@ class LocationViewModel @Inject constructor(
                 delay(1000)
                 val currentTime = System.currentTimeMillis()
                 val elapsedSeconds = (currentTime - lastUpdateTime) / 1000.0
-                val lastLocation = lastKnownLocation ?: continue
+                val lastKnownLocation = lastKnownLocation ?: continue
                 if (elapsedSeconds > 3) {
                     updateLocation(
-                        if (lastLocation.speed > 0.1 && lastLocation.hasBearing())
-                            predictLocation(lastLocation, elapsedSeconds)
-                        else
-                            lastLocation,
+                        predictLocation(lastKnownLocation, elapsedSeconds),
                         predicted = true
                     )
                 }
@@ -115,15 +113,16 @@ class LocationViewModel @Inject constructor(
         }
     }
 
-    private fun predictLocation(location: Location, elapsedSeconds: Double): Location {
-        var speed = location.speed // m/s
-        val bearingRad = Math.toRadians(location.bearing.toDouble())
+    private fun predictLocation(lastKnownLocation: Location, elapsedSeconds: Double): Location {
+        Log.d("predict", "predicting location")
+        var speed = lastKnownLocation.speed // m/s
+        val bearingRad = Math.toRadians(lastKnownLocation.bearing.toDouble())
 
         val distance = speed * elapsedSeconds // in meters
         val earthRadius = 6371000.0 // meters
 
-        val lat1 = Math.toRadians(location.latitude)
-        val lon1 = Math.toRadians(location.longitude)
+        val lat1 = Math.toRadians(lastKnownLocation.latitude)
+        val lon1 = Math.toRadians(lastKnownLocation.longitude)
 
         val lat2 = asin(
             sin(lat1) * cos(distance / earthRadius) +
@@ -134,11 +133,11 @@ class LocationViewModel @Inject constructor(
             cos(distance / earthRadius) - sin(lat1) * sin(lat2)
         )
 
-        return Location(location.provider).apply {
+        return Location(lastKnownLocation.provider).apply {
             latitude = Math.toDegrees(lat2)
             longitude = Math.toDegrees(lon2)
-            speed = location.speed
-            bearing = location.bearing
+            this.speed = lastKnownLocation.speed
+            bearing = lastKnownLocation.bearing
             time = System.currentTimeMillis()
         }
     }
