@@ -52,7 +52,7 @@ class LocationViewModel @Inject constructor(
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             val location = locationResult.lastLocation ?: return
-            updateLocation(location, true)
+            updateLocation(location, false)
 
         }
     }

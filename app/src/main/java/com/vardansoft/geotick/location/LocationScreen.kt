@@ -53,7 +53,6 @@ fun LocationScreen(viewModel: LocationViewModel = hiltViewModel()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(8.dp)
             ) {
                 LocationMapView(
                     latitude = state.latitude,
@@ -98,7 +97,7 @@ fun LocationMapView(latitude: Double, longitude: Double) {
     GoogleMap(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp),
+            .height(500.dp),
         cameraPositionState = cameraPositionState
     ) {
         Marker(
@@ -111,7 +110,7 @@ fun LocationMapView(latitude: Double, longitude: Double) {
 
 @Composable
 fun LocationDataDisplay(state: LocationState) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Latitude: ${state.latitude}", style = MaterialTheme.typography.bodySmall)
         Text("Longitude: ${state.longitude}", style = MaterialTheme.typography.bodySmall)
         Text("Speed: ${"%.2f".format(state.speed)} m/s", style = MaterialTheme.typography.bodySmall)
