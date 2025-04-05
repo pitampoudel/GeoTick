@@ -44,17 +44,12 @@ import com.vardansoft.geotick.utils.BitmapUtils.bitmapDescriptorFromVector
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun LocationScreen(viewModel: LocationViewModel = hiltViewModel()) {
+    val ctx = LocalContext.current
     val state by viewModel.locationState
-
+    val isTrackingEnabled by viewModel.isTrackingEnabled
     val locationPermissionState = rememberPermissionState(
         Manifest.permission.ACCESS_FINE_LOCATION
     )
-
-    LaunchedEffect(locationPermissionState.status) {
-        if (locationPermissionState.status.isGranted) {
-            viewModel.startLocationUpdates()
-        }
-    }
 
     when {
         locationPermissionState.status.isGranted -> {
@@ -70,7 +65,17 @@ fun LocationScreen(viewModel: LocationViewModel = hiltViewModel()) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                Button(
+                    onClick = {
+                        viewModel.toggleTracking(ctx)
+                    },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text(text = if (isTrackingEnabled) "Stop Tracking" else "Start Tracking")
+                }
+
                 LocationDataDisplay(state)
+
             }
         }
 
@@ -140,6 +145,7 @@ fun LocationDataDisplay(state: LocationState) {
     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text("Latitude: ${state.latitude}", style = MaterialTheme.typography.bodySmall)
         Text("Longitude: ${state.longitude}", style = MaterialTheme.typography.bodySmall)
+        Text("Rotation: ${state.bearing}", style = MaterialTheme.typography.bodySmall)
         Text("Speed: ${"%.2f".format(state.speed)} m/s", style = MaterialTheme.typography.bodySmall)
 
         state.error?.let {

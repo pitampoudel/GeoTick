@@ -1,6 +1,7 @@
 package com.vardansoft.geotick.location
 
 import android.app.Application
+import android.content.Context
 import android.location.Location
 import android.os.Looper
 import androidx.annotation.RequiresPermission
@@ -13,6 +14,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.vardansoft.geotick.utils.GpsUtils.checkAndPromptEnableGPS
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -33,6 +35,9 @@ class LocationViewModel @Inject constructor(
         LocationRequest.Builder(1000).setPriority(Priority.PRIORITY_HIGH_ACCURACY).build()
 
 
+    private val _isTrackingEnabled = mutableStateOf(false)
+    val isTrackingEnabled: State<Boolean> = _isTrackingEnabled
+
     private var lastKnownLocation: Location? = null
     private var lastUpdateTime: Long = System.currentTimeMillis()
     private val _locationState = mutableStateOf(LocationState())
@@ -44,7 +49,7 @@ class LocationViewModel @Inject constructor(
         _locationState.value = LocationState(
             latitude = location.latitude,
             longitude = location.longitude,
-            bearing=location.bearing,
+            bearing = location.bearing,
             speed = location.speed.toDouble(),
             error = if (predicted) "Using predicted location" else null
         )
@@ -59,7 +64,14 @@ class LocationViewModel @Inject constructor(
     }
 
     @RequiresPermission(anyOf = ["android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"])
-    fun startLocationUpdates() {
+    fun startTracking(ctx: Context) {
+        _isTrackingEnabled.value = true
+        checkAndPromptEnableGPS(
+            context = ctx,
+            onGPSReady = {
+
+            }
+        )
         fusedLocationClient.requestLocationUpdates(
             locationRequest,
             locationCallback,
@@ -68,8 +80,18 @@ class LocationViewModel @Inject constructor(
         startPredictionLoop()
     }
 
-    fun stopLocationUpdates() {
+    private fun stopTracking() {
+        _isTrackingEnabled.value = false
         fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    @RequiresPermission(anyOf = ["android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"])
+    fun toggleTracking(ctx: Context) {
+        if (_isTrackingEnabled.value) {
+            stopTracking()
+        } else {
+            startTracking(ctx)
+        }
     }
 
 
@@ -82,7 +104,7 @@ class LocationViewModel @Inject constructor(
                 val lastLocation = lastKnownLocation ?: continue
                 if (elapsedSeconds > 3) {
                     updateLocation(
-                        if (lastLocation.speed > 0.5 && lastLocation.hasBearing())
+                        if (lastLocation.speed > 0.1 && lastLocation.hasBearing())
                             predictLocation(lastLocation, elapsedSeconds)
                         else
                             lastLocation,
