@@ -4,8 +4,13 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
-}
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 
+}
+secrets {
+    propertiesFileName = "secrets.properties"
+    defaultPropertiesFileName = "local.defaults.properties"
+}
 android {
     namespace = "com.vardansoft.geotick"
     compileSdk = 35
@@ -62,4 +67,8 @@ dependencies {
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.accompanist.permissions)
+    implementation(libs.maps.compose)
+    implementation(libs.play.services.maps)
+
 }

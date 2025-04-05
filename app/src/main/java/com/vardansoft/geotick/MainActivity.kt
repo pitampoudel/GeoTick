@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.vardansoft.geotick.location.LocationScreen
 import com.vardansoft.geotick.ui.theme.GeoTickTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -14,7 +15,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             GeoTickTheme {
-
+                LocationScreen()
             }
         }
     }
