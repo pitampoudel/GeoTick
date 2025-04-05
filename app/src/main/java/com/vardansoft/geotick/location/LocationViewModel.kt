@@ -80,8 +80,13 @@ class LocationViewModel @Inject constructor(
                 val elapsedSeconds = (currentTime - lastUpdateTime) / 1000.0
                 val lastLocation = lastKnownLocation ?: continue
                 if (elapsedSeconds > 3) {
-                    val predicted = predictLocation(lastLocation, elapsedSeconds)
-                    updateLocation(predicted, predicted = true)
+                    updateLocation(
+                        if (lastLocation.speed > 0.5 && lastLocation.hasBearing())
+                            predictLocation(lastLocation, elapsedSeconds)
+                        else
+                            lastLocation,
+                        predicted = true
+                    )
                 }
             }
         }
@@ -106,12 +111,13 @@ class LocationViewModel @Inject constructor(
             cos(distance / earthRadius) - sin(lat1) * sin(lat2)
         )
 
-        val newLocation = Location(location.provider).apply {
+        return Location(location.provider).apply {
             latitude = Math.toDegrees(lat2)
             longitude = Math.toDegrees(lon2)
             speed = location.speed
+            bearing = location.bearing
+            time = System.currentTimeMillis()
         }
-
-        return newLocation
     }
+
 }
