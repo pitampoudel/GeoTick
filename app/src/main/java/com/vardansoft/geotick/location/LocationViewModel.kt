@@ -44,6 +44,7 @@ class LocationViewModel @Inject constructor(
         _locationState.value = LocationState(
             latitude = location.latitude,
             longitude = location.longitude,
+            bearing=location.bearing,
             speed = location.speed.toDouble(),
             error = if (predicted) "Using predicted location" else null
         )

@@ -15,9 +15,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -25,12 +30,15 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.vardansoft.geotick.R
+import com.vardansoft.geotick.utils.BitmapUtils.bitmapDescriptorFromVector
 
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalPermissionsApi::class)
@@ -56,7 +64,8 @@ fun LocationScreen(viewModel: LocationViewModel = hiltViewModel()) {
             ) {
                 LocationMapView(
                     latitude = state.latitude,
-                    longitude = state.longitude
+                    longitude = state.longitude,
+                    bearing = state.bearing
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -81,17 +90,31 @@ fun LocationScreen(viewModel: LocationViewModel = hiltViewModel()) {
 
 
 @Composable
-fun LocationMapView(latitude: Double, longitude: Double) {
+fun LocationMapView(
+    latitude: Double,
+    longitude: Double,
+    bearing: Float
+) {
+    val ctx = LocalContext.current
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(latitude, longitude), 16f)
     }
 
-    // Smoothly animate camera to new location
+    val userLatLng = LatLng(latitude, longitude)
+
+    // Animate camera to follow user
     LaunchedEffect(latitude, longitude) {
         cameraPositionState.animate(
-            update = CameraUpdateFactory.newLatLng(LatLng(latitude, longitude)),
+            update = CameraUpdateFactory.newLatLng(userLatLng),
             durationMs = 1000
         )
+    }
+
+    var markerIcon by remember { mutableStateOf<BitmapDescriptor?>(null) }
+
+    // Load marker safely AFTER composition starts
+    LaunchedEffect(Unit) {
+        markerIcon = bitmapDescriptorFromVector(ctx, R.drawable.navigation_arrow)
     }
 
     GoogleMap(
@@ -101,8 +124,12 @@ fun LocationMapView(latitude: Double, longitude: Double) {
         cameraPositionState = cameraPositionState
     ) {
         Marker(
-            state = MarkerState(position = LatLng(latitude, longitude)),
-            title = "You are here"
+            icon = markerIcon,
+            state = MarkerState(position = userLatLng),
+            title = "You are here",
+            rotation = bearing, // Direction the user is heading
+            anchor = Offset(0.5f, 0.5f), // Center the rotation
+            flat = true // Important: makes rotation match the map orientation
         )
     }
 }
@@ -161,6 +188,7 @@ fun PermissionRequestButton(onRequest: () -> Unit) {
 data class LocationState(
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
+    val bearing: Float = 0.0F,
     val speed: Double = 0.0,
     val error: String? = null
 )
